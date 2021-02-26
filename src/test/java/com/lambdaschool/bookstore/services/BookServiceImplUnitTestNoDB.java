@@ -1,3 +1,4 @@
+
 package com.lambdaschool.bookstore.services;
 
 import com.lambdaschool.bookstore.BookstoreApplicationTest;
@@ -6,7 +7,9 @@ import com.lambdaschool.bookstore.models.Author;
 import com.lambdaschool.bookstore.models.Book;
 import com.lambdaschool.bookstore.models.Section;
 import com.lambdaschool.bookstore.models.Wrote;
+import com.lambdaschool.bookstore.repository.AuthorRepository;
 import com.lambdaschool.bookstore.repository.BookRepository;
+import com.lambdaschool.bookstore.repository.SectionRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,8 +23,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = BookstoreApplicationTest.class)
@@ -33,6 +38,13 @@ public class BookServiceImplUnitTestNoDB
 
     @MockBean
     private BookRepository bookrepos;
+
+    @MockBean
+    private SectionRepository sectionrepo;
+
+
+
+
 
     List<Book> myBookList = new ArrayList<>();
 
@@ -68,33 +80,33 @@ public class BookServiceImplUnitTestNoDB
         Book b1 = new Book("Flatterland", "9780738206752", 2001, s1);
         b1.setBookid(1);
         b1.getWrotes()
-            .add(new Wrote(a6, b1));
+                .add(new Wrote(a6, b1));
         myBookList.add(b1);
 
         Book b2 = new Book("Digital Fortess", "9788489367012", 2007, s1);
         b2.setBookid(2);
         b2.getWrotes()
-            .add(new Wrote(a2, b2));
+                .add(new Wrote(a2, b2));
         myBookList.add(b2);
 
         Book b3 = new Book("The Da Vinci Code", "9780307474278", 2009, s1);
         b3.setBookid(3);
         b3.getWrotes()
-            .add(new Wrote(a2, b3));
+                .add(new Wrote(a2, b3));
         myBookList.add(b3);
 
         Book b4 = new Book("Essentials of Finance", "1314241651234", 0, s4);
         b4.setBookid(4);
         b4.getWrotes()
-            .add(new Wrote(a3, b4));
+                .add(new Wrote(a3, b4));
         b4.getWrotes()
-            .add(new Wrote(a5, b4));
+                .add(new Wrote(a5, b4));
         myBookList.add(b4);
 
         Book b5 = new Book("Calling Texas Home", "1885171382134", 2000, s3);
         b5.setBookid(5);
         b5.getWrotes()
-            .add(new Wrote(a4, b5));
+                .add(new Wrote(a4, b5));
         myBookList.add(b5);
 
         System.out.println("Size " + myBookList.size());
@@ -115,35 +127,73 @@ public class BookServiceImplUnitTestNoDB
     @Test
     public void findAll()
     {
+        Mockito.when(bookrepos.findAll())
+                .thenReturn(myBookList);
+
+        assertEquals(5,
+                bookService.findAll().size());
+
     }
 
     @Test
     public void findBookById()
     {
+        Mockito.when(bookrepos.findById(2L))
+                .thenReturn(Optional.of(myBookList.get(1)));
+
+        assertEquals("Digital Fortess",
+                bookService.findBookById(2L).getTitle());
     }
 
     @Test(expected = ResourceNotFoundException.class)
     public void notFindBookById()
     {
+        Mockito.when(bookrepos.findById(2L))
+                .thenReturn(Optional.empty());
+        assertEquals("Digital Fortess",
+                bookService.findBookById(2L).getTitle());
     }
 
     @Test
     public void delete()
     {
+        Mockito.when(bookrepos.findById(3L))
+                .thenReturn(Optional.of(myBookList.get(0)));
+
+        Mockito.doNothing()
+                .when(bookrepos)
+                .deleteById(3L);
+
+        bookService.delete(3L);
+        assertEquals(5,
+                myBookList.size());
     }
 
     @Test
     public void save()
     {
+
+        Section s1 = new Section("Fiction");
+        s1.setSectionid(1);
+
+        Book b1 = new Book("My Book", "9780738206752", 1988, s1);
+        b1.setBookid(1);
+
+
+        Mockito.when(sectionrepo.findById(1L))
+                .thenReturn(Optional.of(s1));
+
+        Mockito.when(bookrepos.findById(1L))
+                .thenReturn(Optional.of(b1));
+
+        Mockito.when(bookrepos.save(any(Book.class)))
+                .thenReturn(b1);
+
+        assertEquals(1L,
+                bookService.save(b1).getBookid());
     }
 
-    @Test
-    public void update()
-    {
-    }
 
-    @Test
-    public void deleteAll()
-    {
-    }
+
+
 }
